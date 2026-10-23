@@ -205,23 +205,24 @@ data.forEach((x,i)=>{
   card.innerHTML=`<h3>${c[0]} <span class="tag">${c[1]}</span></h3><div class="meta">${c[2]}</div>`;
   c[3].forEach((txt,j)=>{
    let id=`w1-${i}-${j}`;let row=document.createElement("div");row.className="item";
-    if(/^(לשתות כוס מים|שתייה לאורך היום|שינה טובה|סימון סיכום שבועי)/.test(txt)){row.className="niv-action-info";row.textContent="ℹ️ "+txt;card.appendChild(row);return;}row.innerHTML=`<input class="check" type="checkbox" id="${id}"><div><div class="ititle">${txt}</div><div class="idesc">${desc(txt)}</div></div>`;
+    if(/^(לשתות כוס מים|שתייה לאורך היום|שינה טובה|סימון סיכום שבועי|מנוחה והתאוששות)/.test(txt)){row.className="niv-action-info";row.textContent="ℹ️ "+txt;card.appendChild(row);return;}row.innerHTML=`<input class="check" type="checkbox" id="${id}"><div><div class="ititle">${txt}</div><div class="idesc">${desc(txt)}</div></div>`;
    const key=Object.keys(exerciseGuides).find(k=>txt.includes(k));
     if(key){const btn=document.createElement("button");btn.type="button";btn.className="exercise-help";btn.textContent="📖 הסבר מפורט + תמונת המכשיר";btn.addEventListener("click",e=>{e.preventDefault();e.stopPropagation();openExerciseGuide(key,txt)});row.querySelector(".idesc").after(btn)}
     card.appendChild(row);
   });day.appendChild(card);
  });
- if(i!==4){
+ if(![5,6].includes(i)){
    const fb=document.createElement("div"); fb.className="card fallback"; fb.dataset.fallbackDay=i; fb.dataset.dayType=([1,5].includes(i)?"strength":([0,3,6].includes(i)?"cardio":"recovery"));
    const isStrength=[1,5].includes(i);
    fb.innerHTML=`<h3>⚡ אין לי זמן / צריך חלופה</h3><div class="small">לא מבטלים את היום — בוחרים גרסה שמתאימה לזמן שיש. הבחירה נשמרת.</div><div class="fallback-actions"><button class="fallback-btn" data-mode="short">⚡ ${isStrength?"אימון כוח מקוצר":"פעילות מקוצרת"}</button><button class="fallback-btn alt" data-mode="alternate">🚶 ${isStrength?"הליכה/ריצה + כוח":"חלופה קצרה + כוח"}</button></div><div class="fallback-plan" data-plan></div>`;
    day.appendChild(fb);
  }
- if([0,1,3,5,6].includes(i)){
+ if([0,1,2,3,4].includes(i)){
    const rating=document.createElement("div"); rating.className="card rating"; rating.dataset.ratingDay=i;
    rating.innerHTML=`<div class="rating-title">⭐ איך היה האימון?</div><div class="small">דרג מ־1 עד 10. הדירוג נשמר אוטומטית במכשיר.</div><div class="stars">${Array.from({length:10},(_,n)=>`<button class="star" data-value="${n+1}" aria-label="${n+1} מתוך 10">☆</button>`).join("")}</div><div class="rating-value">בחר דירוג 1–10</div><button class="rating-reset" type="button">אפס דירוג</button>`;
    day.appendChild(rating);
  }
+ if(![5,6].includes(i)){
  const bonus=document.createElement("div"); bonus.className="card daily-bonus"; bonus.dataset.bonusDay=i;
  bonus.innerHTML=`<div class="bonus-head"><div class="bonus-title">🏆 בונוסים יומיים</div><div class="day-points" id="day-points-${i}">0 נק׳</div></div>
  <div class="bonus-block"><div class="bonus-label">🍽️ כמה אני מרוצה מהתזונה שלי היום?</div><div class="bonus-explain">1–4 כוכבים: ניקוד שלילי • 5: אפס • 6–10: בונוס עד 50 נק׳</div><div class="nutrition-stars">${Array.from({length:10},(_,n)=>`<button class="nutrition-star" data-value="${n+1}" aria-label="${n+1} מתוך 10">☆</button>`).join("")}</div><div class="rating-value nutrition-value">טרם דורג</div><button class="nutrition-reset" type="button">אפס דירוג</button></div>
@@ -230,6 +231,7 @@ data.forEach((x,i)=>{
  <div class="bonus-total">🏆 נקודות היום: <span class="bonus-total-value">0</span></div>`;
  day.appendChild(bonus);
  const timebox=document.createElement("div"); timebox.className="card timebox"; timebox.dataset.timeDay=i; timebox.innerHTML=`<div class="time-title">🕒 מתי ביצעתי את הפעילות?</div><div class="small">הזמן המועדף הוא בוקר, אבל השעה גמישה ואין שום הפחתת נקודות אם ביצעת בצהריים או בערב.${i===0?" ביום ראשון פעילות בקאנטרי אפשרית רק מ־15:00; הליכה/ריצה בחוץ אפשרית גם בבוקר.":""}</div><div class="time-options"><button class="time-btn" data-time="morning">🌅 בוקר</button><button class="time-btn" data-time="noon">☀️ צהריים</button><button class="time-btn" data-time="evening">🌆 ערב</button></div>`; day.appendChild(timebox);
+ } else { const restNote=document.createElement("div"); restNote.className="card"; restNote.innerHTML=`<h3>😴 יום מנוחה</h3><div class="meta">אין אימון, אין נקודות ואין צורך בדיווח או בסיכום אימון.</div>`; day.appendChild(restNote); }
  days.appendChild(day);
 });
 function desc(t){
@@ -280,7 +282,7 @@ function getBonus(day){try{return JSON.parse(localStorage.getItem(bonusKey(day))
 function saveBonus(day,state){localStorage.setItem(bonusKey(day),JSON.stringify(state));renderBonus(day,state);updateWeeklyScore()}
 function nutritionPoints(v){return ({1:-30,2:-20,3:-10,4:-5,5:0,6:5,7:10,8:20,9:30,10:50})[Number(v)]??0}
 function bonusPoints(state){return nutritionPoints(state.nutrition) + Math.min(Number(state.sleep)||0,4)*10 + (Number(state.water)||0)}
-function renderBonus(day,state){const box=document.querySelector(`[data-bonus-day="${day}"]`);if(!box)return;const nutrition=Number(state.nutrition)||0,sleep=Number(state.sleep)||0,water=Number(state.water)||0;box.querySelectorAll(".nutrition-star").forEach(b=>{const n=Number(b.dataset.value);b.textContent=n<=nutrition?"★":"☆";b.classList.toggle("on",n<=nutrition)});box.querySelector(".nutrition-value").textContent=nutrition?`${nutrition}/10 — ${nutritionPoints(nutrition)} נק׳`:"טרם דורג";box.querySelector(".sleep-value").textContent=sleep+" שעות";box.querySelector(".water-count").textContent=water+" כוסות";box.querySelector(".water-sub").textContent=water+" נק׳ ממים";const taskPts=[...document.querySelectorAll(`#day${day} .check`)].filter(x=>x.checked).length*TASK_POINTS;const pts=bonusPoints(state)+taskPts;box.querySelector(".bonus-total-value").textContent=pts;document.getElementById(`day-points-${day}`).textContent=pts+" נק׳"}
+function renderBonus(day,state){const box=document.querySelector(`[data-bonus-day="${day}"]`);if(!box)return;const nutrition=Number(state.nutrition)||0,sleep=Number(state.sleep)||0,water=Number(state.water)||0;box.querySelectorAll(".nutrition-star").forEach(b=>{const n=Number(b.dataset.value);b.textContent=n<=nutrition?"★":"☆";b.classList.toggle("on",n<=nutrition)});box.querySelector(".nutrition-value").textContent=nutrition?`${nutrition}/10 — ${nutritionPoints(nutrition)} נק׳`:"טרם דורג";box.querySelector(".sleep-value").textContent=sleep+" שעות";box.querySelector(".water-count").textContent=water+" כוסות";box.querySelector(".water-sub").textContent=water+" נק׳ ממים";const taskPts=[...document.querySelectorAll(`#day${day} .check`)].filter(x=>x.checked).length*TASK_POINTS;const pts=[5,6].includes(Number(day))?0:bonusPoints(state)+taskPts;box.querySelector(".bonus-total-value").textContent=pts;document.getElementById(`day-points-${day}`).textContent=pts+" נק׳"}
 function loadBonuses(){document.querySelectorAll(".daily-bonus").forEach(box=>{const day=Number(box.dataset.bonusDay);let state=getBonus(day);renderBonus(day,state);box.querySelectorAll(".nutrition-star").forEach(btn=>btn.addEventListener("click",()=>{state=getBonus(day);state.nutrition=Number(btn.dataset.value);saveBonus(day,state)}));box.querySelector(".nutrition-reset").addEventListener("click",()=>{state=getBonus(day);state.nutrition=0;saveBonus(day,state);toast("דירוג התזונה אופס");});box.querySelector(".sleep-plus").addEventListener("click",()=>{state=getBonus(day);state.sleep=(Number(state.sleep)||0)+1;saveBonus(day,state)});box.querySelector(".sleep-minus").addEventListener("click",()=>{state=getBonus(day);state.sleep=Math.max(0,(Number(state.sleep)||0)-1);saveBonus(day,state)});box.querySelector(".water-btn").addEventListener("click",()=>{state=getBonus(day);state.water=(Number(state.water)||0)+1;saveBonus(day,state);toast("💧 עוד כוס! +1 נק׳")});box.querySelector(".water-minus").addEventListener("click",()=>{state=getBonus(day);state.water=Math.max(0,(Number(state.water)||0)-1);saveBonus(day,state)})})}
 
 function timeKey(day){return "nivFitnessTimeW1-"+day}
@@ -391,7 +393,7 @@ const REWARD_TIERS={
   "Double Trouble — במקום פרס גדול אחד, לבחור שני פרסים בינוניים"
  ]}
 };
-function earnedPoints(){const task=[...document.querySelectorAll(".check")].filter(x=>x.checked).length*TASK_POINTS;let bonus=0;for(let i=0;i<data.length;i++)bonus+=bonusPoints(getBonus(i));return task+bonus+extraTotalPoints()}
+function earnedPoints(){const task=[...document.querySelectorAll(".check")].filter(x=>x.checked).length*TASK_POINTS;let bonus=0;for(let i=0;i<data.length;i++)if(![5,6].includes(i))bonus+=bonusPoints(getBonus(i));return task+bonus+extraTotalPoints()}
 function rewardState(){try{const x=JSON.parse(localStorage.getItem("nivFitnessRewardsV11")||"{}");return {claimed:x.claimed||{small:0,medium:0,large:0},history:x.history||[],goldSpent:Number(x.goldSpent)||0}}catch(e){return {claimed:{small:0,medium:0,large:0},history:[],goldSpent:0}}}
 function saveRewardState(s){localStorage.setItem("nivFitnessRewardsV11",JSON.stringify(s))}
 function totalWeeklyPoints(){return Math.max(0,earnedPoints()-rewardState().goldSpent)}
@@ -973,16 +975,16 @@ const escapeHtml=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;'
 const strengthA=['Leg Press','Chest Press','Lat Pulldown','Seated Leg Curl','Seated Cable Row','Plank'];
 const strengthB=['Goblet Squat','Incline Chest Press','Lat Pulldown','Leg Extension','Seated Cable Row','Dead Bug'];
 function strengthBlocksForSession(week,day){
- if(week===1)return (day===1?strengthA:strengthB);
+ if(week===1)return day===0?strengthA:day===2?strengthB:[];
  const task=typeof window.nivGetPlannedSession==='function'?window.nivGetPlannedSession(week,day):null;
  if(!task||task[2]!=='כוח')return [];
  return task[1].map(x=>Object.keys(exerciseGuides).sort((a,b)=>b.length-a.length).find(n=>x.startsWith(n+' —'))).filter(Boolean);
 }
-function category(day,week){if(week===1)return day===1||day===5?'strength':(day===0||day===3)?'swim':'run';const p=window.nivGetPlannedSession?.(week,day);return p?.[2]==='כוח'?'strength':p?.[0]?.includes('בריכה')?'swim':'run'}
+function category(day,week){if(week===1)return [0,2].includes(day)?'strength':[1,3].includes(day)?'swim':day===4?'run':'rest';const p=window.nivGetPlannedSession?.(week,day);return p?.[2]==='מנוחה'?'rest':p?.[2]==='התאוששות'?'recovery':p?.[2]==='כוח'?'strength':p?.[0]?.includes('בריכה')?'swim':'run'}
 function latest(type,name,before){const all=read();return Object.entries(all).filter(([date,x])=>date<before&&x.type===type&&(!name||x.exercises?.[name])).sort((a,b)=>b[0].localeCompare(a[0]))[0]?.[1]||null}
 function field(label,id,type='number',extra=''){return `<label for="${id}">${label}</label><input id="${id}" type="${type}" ${extra}>`}
 function sel(label,id,options){return `<label for="${id}">${label}</label><select id="${id}"><option value="">בחר</option>${options.map(([v,t])=>`<option value="${v}">${t}</option>`).join('')}</select>`}
-function open(date,day){const week=Math.floor((new Date(date+'T12:00:00')-START)/604800000)+1;const type=category(day,week),saved=read()[date]||{};let body='';
+function open(date,day){const week=Math.floor((new Date(date+'T12:00:00')-START)/604800000)+1;const type=category(day,week);if(type==='rest'||type==='recovery')return;const saved=read()[date]||{};let body='';
 if(type==='swim')body=field('כמה בריכות של 25 מטר שחית?','ns-laps','number','min="0" max="400"')+field('כמה בריכות שחית ברצף הארוך ביותר?','ns-cont','number','min="0" max="400"')+field('משך האימון בדקות','ns-min','number','min="0" max="240"')+sel('סגנונות ששילבת','ns-style',[['free','חתירה'],['back','גב'],['both','חתירה וגב']]);
 else if(type==='run')body=sel('סוג פעילות','ns-kind',[['walk','הליכה'],['mix','הליכה וריצה'],['run','ריצה']])+field('מרחק בקילומטרים','ns-km','number','min="0" max="100" step="0.01"')+field('משך כולל בדקות','ns-min','number','min="0" max="300"')+field('דקות ריצה רצופה (0 אם רק הלכת)','ns-cont','number','min="0" max="300"');
 else {const week=Math.floor((new Date(date+'T12:00:00')-START)/604800000)+1;const block=strengthBlocksForSession(week,day);const names=block;body='<p>לכל תרגיל רשום משקל עבודה, חזרות בסט האחרון וקושי. בתרגילי ליבה אפשר להשאיר משקל ריק.</p>'+names.map((name,i)=>`<fieldset style="border:1px solid #dce8df;border-radius:12px;margin:10px 0;padding:10px"><legend><b>${escapeHtml(name)}</b></legend>${field('משקל בק״ג',`ns-kg-${i}`,'number','min="0" step="0.5"')}${field('חזרות בסט האחרון / שניות בהחזקה',`ns-reps-${i}`,'number','min="0" max="300"')}${field('קושי התרגיל 1–10',`ns-rpe-${i}`,'number','min="1" max="10"')}</fieldset>`).join('');}
@@ -1005,13 +1007,13 @@ metrics[week]=old;localStorage.setItem('nivFitnessPerformanceV2',JSON.stringify(
 modal.classList.remove('open');alert('✅ הדיווח נשמר! האימון הבא יוכל להתחשב בנתונים שלך.');
 };modal.classList.add('open');}
 modal.addEventListener('click',e=>{if(e.target===modal)modal.classList.remove('open')});
-function attach(){document.querySelectorAll('.day').forEach((box,d)=>{if(d===4||box.querySelector('.niv-session-btn'))return;const btn=document.createElement('button');btn.className='niv-session-btn';btn.type='button';btn.textContent='📝 סיימתי אימון — דווח ביצועים';btn.onclick=()=>open(dateAt(d),d);box.appendChild(btn)});
+function attach(){document.querySelectorAll('.day').forEach((box,d)=>{if(['rest','recovery'].includes(category(d,1))||box.querySelector('.niv-session-btn'))return;const btn=document.createElement('button');btn.className='niv-session-btn';btn.type='button';btn.textContent='📝 סיימתי אימון — דווח ביצועים';btn.onclick=()=>open(dateAt(d),d);box.appendChild(btn)});
 // The unlimited-week renderer replaces its cards; install a delegated handler and buttons after each render.
 const future=document.getElementById('ff-content');if(!future)return;
 function addButtons(){future.querySelectorAll('.ff-card').forEach(card=>{const h=card.querySelector('h3');if(!h||card.querySelector('.niv-session-btn'))return;const m=h.textContent.match(/^(ראשון|שני|שלישי|רביעי|חמישי|שישי|שבת)\s+(\d{1,2}\.\d{1,2}\.\d{4})/);if(!m)return;const day=['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'].indexOf(m[1]);const [dd,mm,yy]=m[2].split('.');const date=`${yy}-${mm.padStart(2,'0')}-${dd.padStart(2,'0')}`;const week=Math.floor((new Date(date+'T12:00:00')-START)/604800000)+1;if(!['strength','swim','run'].includes(category(day,week))|| (window.nivGetPlannedSession?.(week,day)?.[2]==='התאוששות'))return;const btn=document.createElement('button');btn.className='niv-session-btn';btn.textContent=read()[date]?'✏️ ערוך דיווח אימון':'📝 סיימתי אימון — דווח ביצועים';btn.onclick=()=>open(date,day);card.appendChild(btn)})}
 new MutationObserver(()=>{if(!future.dataset.nsBusy){future.dataset.nsBusy='1';addButtons();delete future.dataset.nsBusy}}).observe(future,{childList:true,subtree:false});addButtons();
 // Open only after the last checkbox of a day's planned tasks is checked, never on an unchecked item.
-document.addEventListener('change',e=>{const c=e.target;if(!c.matches('.check,[data-ff-check]')||!c.checked)return;let day,date,boxes;if(c.matches('.check')){const section=c.closest('.day');if(!section)return;day=Number(section.id.replace('day',''));date=dateAt(day);boxes=[...section.querySelectorAll('.check')]}else{const id=c.dataset.ffCheck.split('-');const w=Number(id[0]);day=Number(id[1]);date=dateAt((w-1)*7+day);boxes=[...c.closest('.ff-card').querySelectorAll('[data-ff-check]')]}if(boxes.length&&boxes.every(x=>x.checked)&&!read()[date])setTimeout(()=>open(date,day),550)},true);
+document.addEventListener('change',e=>{const c=e.target;if(!c.matches('.check,[data-ff-check]')||!c.checked)return;let day,date,boxes;if(c.matches('.check')){const section=c.closest('.day');if(!section)return;day=Number(section.id.replace('day',''));date=dateAt(day);boxes=[...section.querySelectorAll('.check')]}else{const id=c.dataset.ffCheck.split('-');const w=Number(id[0]);day=Number(id[1]);date=dateAt((w-1)*7+day);boxes=[...c.closest('.ff-card').querySelectorAll('[data-ff-check]')]}const wk=Math.floor((new Date(date+'T12:00:00')-START)/604800000)+1;if(!['rest','recovery'].includes(category(day,wk))&&boxes.length&&boxes.every(x=>x.checked)&&!read()[date])setTimeout(()=>open(date,day),550)},true);
 }
 attach();
 })();
@@ -1032,7 +1034,7 @@ const prefix='nivFitnessDailyV14:';
 const read=(date)=>{try{return JSON.parse(localStorage.getItem(prefix+date)||'{}')||{}}catch(e){return {}}};
 const nutrition={1:-30,2:-20,3:-10,4:-5,5:0,6:5,7:10,8:20,9:30,10:50};
 const points=x=>(nutrition[x.nutrition]||0)+Math.min(4,Math.max(0,x.sleep||0))*10+Math.max(0,x.water||0);
-function allPoints(){let total=0;for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.startsWith(prefix)){try{total+=points(JSON.parse(localStorage.getItem(k))||{})}catch(e){}}}return total}
+function allPoints(){let total=0;for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.startsWith(prefix)){try{const date=k.slice(prefix.length),dt=new Date(date+'T12:00:00'),start=new Date(2026,9,18,12),di=Math.round((dt-start)/86400000),w=Math.floor(di/7)+1,d=((di%7)+7)%7;const rest=w===1?[5,6].includes(d):(window.nivGetPlannedSession?.(w,d)?.[2]==='מנוחה');if(!rest)total+=points(JSON.parse(localStorage.getItem(k))||{})}catch(e){}}}return total}
 // Extend the existing permanent points bank; never replace or reset prior achievements.
 if(typeof earnedPoints==='function'&&!window.nivDailyPointsHooked){const previous=earnedPoints;earnedPoints=function(){return previous()+allPoints()};window.nivDailyPointsHooked=true;}
 const dayNames=['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'];
@@ -1050,6 +1052,7 @@ function decorate(){
   const kind=card.querySelector('h3')?.textContent||'';
   const isRest=/מנוחה/.test(kind),isRecovery=/התאוששות/.test(kind),isStrength=/כוח/.test(kind),isSwim=/שחייה/.test(kind);
   const rating=!isRest&&!isRecovery;
+  if(isRest){box.innerHTML=`<div class="niv-tool-card"><h3>😴 יום מנוחה</h3><div class="niv-muted">אין אימון, אין נקודות ואין סיכום אימון ביום מנוחה.</div></div>`;card.appendChild(box);return;}
   box.innerHTML=`${!isRest?`<div class="niv-tool-card"><h3>⚡ אין לי זמן / צריך חלופה</h3><div class="niv-muted">בחר אימון מקוצר (50%) או חלופי (100%). האימון הנבחר מחליף את המקורי.</div><button type="button" class="niv-action" data-mode="short">⚡ אימון מקוצר</button><button type="button" class="niv-action" data-mode="alternate">🚶 אימון חלופי</button><button type="button" class="niv-action" data-mode="original">↩ אימון מקורי</button><div data-mode-text class="niv-muted"></div><div data-fallback-plan class="niv-fallback-detail" hidden></div></div>`:''}${rating?`<div class="niv-tool-card"><h3>⭐ איך היה האימון?</h3><div class="niv-muted">דרג מ־1 עד 10</div><div class="niv-stars" data-stars="rating"></div><div data-rating-text class="niv-muted"></div><button type="button" class="niv-action" data-clear="rating">אפס דירוג</button></div>`:''}<div class="niv-tool-card"><h3>🏆 בונוסים יומיים</h3><b>🍽️ כמה אני מרוצה מהתזונה שלי היום?</b><div class="niv-stars" data-stars="nutrition"></div><div data-nutrition-text class="niv-muted"></div><button type="button" class="niv-action" data-clear="nutrition">אפס דירוג תזונה</button><hr><b>🌙 כמה שעות לא אכלתי לפני השינה?</b><div class="niv-muted">10 נקודות לשעה, עד 4 שעות</div><button type="button" class="niv-action" data-counter="sleep" data-delta="-1">−</button><span class="niv-counter" data-value="sleep"></span><button type="button" class="niv-action" data-counter="sleep" data-delta="1">+</button><hr><b>💧 כוסות מים</b><div class="niv-muted">נקודה אחת לכוס</div><button type="button" class="niv-action" data-counter="water" data-delta="-1">−</button><span class="niv-counter" data-value="water"></span><button type="button" class="niv-action" data-counter="water" data-delta="1">🥤 +</button><div class="niv-result" data-points></div></div><div class="niv-tool-card"><h3>🕒 מתי ביצעתי את הפעילות?</h3><button class="niv-action" data-time="morning">🌅 בוקר</button><button class="niv-action" data-time="noon">☀️ צהריים</button><button class="niv-action" data-time="evening">🌆 ערב</button><div class="niv-muted" data-time-text></div></div>`;
   card.appendChild(box);
   const save=x=>{localStorage.setItem(prefix+iso,JSON.stringify(x));paint();if(typeof updateWeeklyScore==='function')updateWeeklyScore()};
