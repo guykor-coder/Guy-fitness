@@ -987,17 +987,16 @@ function sel(label,id,options){return `<label for="${id}">${label}</label><selec
 function open(date,day){const week=Math.floor((new Date(date+'T12:00:00')-START)/604800000)+1;const type=category(day,week);if(type==='rest'||type==='recovery')return;const saved=read()[date]||{};let body='';
 if(type==='swim')body=field('כמה בריכות של 25 מטר שחית?','ns-laps','number','min="0" max="400"')+field('כמה בריכות שחית ברצף הארוך ביותר?','ns-cont','number','min="0" max="400"')+field('משך האימון בדקות','ns-min','number','min="0" max="240"')+sel('סגנונות ששילבת','ns-style',[['free','חתירה'],['back','גב'],['both','חתירה וגב']]);
 else if(type==='run')body=sel('סוג פעילות','ns-kind',[['walk','הליכה'],['mix','הליכה וריצה'],['run','ריצה']])+field('מרחק בקילומטרים','ns-km','number','min="0" max="100" step="0.01"')+field('משך כולל בדקות','ns-min','number','min="0" max="300"')+field('דקות ריצה רצופה (0 אם רק הלכת)','ns-cont','number','min="0" max="300"');
-else {const week=Math.floor((new Date(date+'T12:00:00')-START)/604800000)+1;const block=strengthBlocksForSession(week,day);const names=block;body='<p>לכל תרגיל רשום משקל עבודה, חזרות בסט האחרון וקושי. בתרגילי ליבה אפשר להשאיר משקל ריק.</p>'+names.map((name,i)=>`<fieldset style="border:1px solid #dce8df;border-radius:12px;margin:10px 0;padding:10px"><legend><b>${escapeHtml(name)}</b></legend>${field('משקל בק״ג',`ns-kg-${i}`,'number','min="0" step="0.5"')}${field('חזרות בסט האחרון / שניות בהחזקה',`ns-reps-${i}`,'number','min="0" max="300"')}${field('קושי התרגיל 1–10',`ns-rpe-${i}`,'number','min="1" max="10"')}</fieldset>`).join('');}
+else {body='<div class="ff-warning">✅ משקל, חזרות וקושי נשמרים עכשיו מיד בסיום כל תרגיל, בתוך כרטיס התרגיל עצמו. כאן נשאר רק הסיכום הכללי של האימון.</div>'; }
 body+=sel('רמת קושי כללית','ns-rpe',[...Array(10)].map((_,i)=>[String(i+1),String(i+1)+'/10']))+sel('רמת הנאה','ns-fun',[...Array(10)].map((_,i)=>[String(i+1),String(i+1)+'/10']))+sel('כאב חריג במהלך האימון?','ns-pain',[['no','לא'],['yes','כן']]);
 sheet.innerHTML=`<h2>📝 סיכום אימון • ${date}</h2><p>הדיווח נשמר במכשיר ומשמש להצעת האימון הבא. אפשר לחזור ולערוך.</p><form id="ns-form">${body}<div class="session-actions"><button type="submit">💾 שמור והתאם</button><button type="button" class="secondary" id="ns-close">סגור</button></div></form>`;
 const val=id=>sheet.querySelector('#'+id)?.value||'';
-if(type==='strength'){strengthBlocksForSession(Math.floor((new Date(date+'T12:00:00')-START)/604800000)+1,day).forEach((name,i)=>{const x=saved.exercises?.[name]||{};for(const [key,part] of [['kg','kg'],['reps','reps'],['rpe','rpe']])sheet.querySelector(`#ns-${key}-${i}`).value=x[part]??'';});}
-else for(const id of ['laps','cont','min','style','kind','km']){const el=sheet.querySelector('#ns-'+id);if(el)el.value=saved[id]??'';}
+if(type!=='strength')for(const id of ['laps','cont','min','style','kind','km']){const el=sheet.querySelector('#ns-'+id);if(el)el.value=saved[id]??'';}
 for(const id of ['rpe','fun','pain'])sheet.querySelector('#ns-'+id).value=saved[id]??'';
 sheet.querySelector('#ns-close').onclick=()=>modal.classList.remove('open');
 sheet.querySelector('#ns-form').onsubmit=e=>{e.preventDefault();const x={type,rpe:val('ns-rpe'),fun:val('ns-fun'),pain:val('ns-pain'),updated:new Date().toISOString()};
-if(type==='strength'){x.exercises={};strengthBlocksForSession(Math.floor((new Date(date+'T12:00:00')-START)/604800000)+1,day).forEach((name,i)=>{x.exercises[name]={kg:val(`ns-kg-${i}`),reps:val(`ns-reps-${i}`),rpe:val(`ns-rpe-${i}`)}})}else for(const k of (type==='swim'?['laps','cont','min','style']:['kind','km','min','cont']))x[k]=val('ns-'+k);
-const all=read();all[date]=x;localStorage.setItem(KEY,JSON.stringify(all));
+if(type!=='strength')for(const k of (type==='swim'?['laps','cont','min','style']:['kind','km','min','cont']))x[k]=val('ns-'+k);
+const all=read();if(type==='strength')x.exercises={...(all[date]?.exercises||{})};all[date]=x;localStorage.setItem(KEY,JSON.stringify(all));
 // Feed the existing weekly recommendation engine without removing its other saved fields.
 const week=Math.floor((new Date(date+'T12:00:00')-START)/604800000)+1;
 if(week>=1){let metrics={};try{metrics=JSON.parse(localStorage.getItem('nivFitnessPerformanceV2')||'{}')}catch(e){}const old=metrics[week]||{};
@@ -1013,7 +1012,7 @@ const future=document.getElementById('ff-content');if(!future)return;
 function addButtons(){future.querySelectorAll('.ff-card').forEach(card=>{const h=card.querySelector('h3');if(!h||card.querySelector('.niv-session-btn'))return;const m=h.textContent.match(/^(ראשון|שני|שלישי|רביעי|חמישי|שישי|שבת)\s+(\d{1,2}\.\d{1,2}\.\d{4})/);if(!m)return;const day=['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'].indexOf(m[1]);const [dd,mm,yy]=m[2].split('.');const date=`${yy}-${mm.padStart(2,'0')}-${dd.padStart(2,'0')}`;const week=Math.floor((new Date(date+'T12:00:00')-START)/604800000)+1;if(!['strength','swim','run'].includes(category(day,week))|| (window.nivGetPlannedSession?.(week,day)?.[2]==='התאוששות'))return;const btn=document.createElement('button');btn.className='niv-session-btn';btn.textContent=read()[date]?'✏️ ערוך דיווח אימון':'📝 סיימתי אימון — דווח ביצועים';btn.onclick=()=>open(date,day);card.appendChild(btn)})}
 new MutationObserver(()=>{if(!future.dataset.nsBusy){future.dataset.nsBusy='1';addButtons();delete future.dataset.nsBusy}}).observe(future,{childList:true,subtree:false});addButtons();
 // Open only after the last checkbox of a day's planned tasks is checked, never on an unchecked item.
-document.addEventListener('change',e=>{const c=e.target;if(!c.matches('.check,[data-ff-check]')||!c.checked)return;let day,date,boxes;if(c.matches('.check')){const section=c.closest('.day');if(!section)return;day=Number(section.id.replace('day',''));date=dateAt(day);boxes=[...section.querySelectorAll('.check')]}else{const id=c.dataset.ffCheck.split('-');const w=Number(id[0]);day=Number(id[1]);date=dateAt((w-1)*7+day);boxes=[...c.closest('.ff-card').querySelectorAll('[data-ff-check]')]}const wk=Math.floor((new Date(date+'T12:00:00')-START)/604800000)+1;if(!['rest','recovery'].includes(category(day,wk))&&boxes.length&&boxes.every(x=>x.checked)&&!read()[date])setTimeout(()=>open(date,day),550)},true);
+document.addEventListener('change',e=>{const c=e.target;if(!c.matches('.check,[data-ff-check]')||!c.checked)return;let day,date,boxes;if(c.matches('.check')){const section=c.closest('.day');if(!section)return;day=Number(section.id.replace('day',''));date=dateAt(day);boxes=[...section.querySelectorAll('.check')]}else{const id=c.dataset.ffCheck.split('-');const w=Number(id[0]);day=Number(id[1]);date=dateAt((w-1)*7+day);boxes=[...c.closest('.ff-card').querySelectorAll('[data-ff-check]')]}const wk=Math.floor((new Date(date+'T12:00:00')-START)/604800000)+1;const cat=category(day,wk);if(!['rest','recovery','strength'].includes(cat)&&boxes.length&&boxes.every(x=>x.checked)&&!read()[date])setTimeout(()=>open(date,day),550)},true);
 }
 attach();
 })();
@@ -1284,4 +1283,43 @@ const statsBody=document.getElementById('niv-stats-body');if(statsBody){new Muta
  const draw=()=>{const box=document.getElementById('guy-swaps');box.replaceChildren();read().forEach((x,i)=>{const line=document.createElement('div');line.style.margin='7px 0';line.textContent=x.from+' ← '+x.to+' ';const b=document.createElement('button');b.textContent='בטל';b.onclick=()=>{localStorage.setItem(key,JSON.stringify(read().filter((_,j)=>i!==j)));draw()};line.append(b);box.append(line)})};
  document.getElementById('guy-swap-save').onclick=()=>{const from=document.getElementById('guy-swap-from').value,to=document.getElementById('guy-swap-to').value;if(!from||!to||from===to){alert('בחר שני תאריכים שונים');return}const arr=read().filter(x=>x.from!==from);arr.push({from,to});localStorage.setItem(key,JSON.stringify(arr));draw();alert('השינוי נשמר ביומן הגמישות. שים לב: התוכנית היומית עצמה לא הועברה אוטומטית; אפשר להשתמש באימון המקורי בתאריך החדש.')};draw();
 })();
-</script></body></html>
+</script>
+<style id="guy-inline-strength-log-style">
+.guy-exercise-log{margin:10px 0 2px;padding:12px;border:1px solid #b8ddc6;background:#f3fbf6;border-radius:13px;display:none}
+.guy-exercise-log.open{display:block}.guy-exercise-log-title{font-weight:900;color:#1d6445;margin-bottom:9px}
+.guy-exercise-log-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.guy-exercise-log label{font-size:12px;font-weight:800;color:#53675c}
+.guy-exercise-log input{width:100%;margin-top:4px;padding:10px;border:1px solid #c9d9d0;border-radius:9px;font:inherit;background:white}
+.guy-rpe{grid-column:1/-1}.guy-rpe-buttons{display:flex;gap:4px;flex-wrap:wrap;margin-top:6px;direction:ltr}.guy-rpe-buttons button{width:32px;height:32px;border:1px solid #b8d6c3;border-radius:8px;background:#fff;color:#245d43;font-weight:850}.guy-rpe-buttons button.on{background:#287650;color:white;border-color:#287650}
+.guy-exercise-save{width:100%;margin-top:10px;border:0;border-radius:10px;padding:10px;background:#287650;color:white;font-weight:900}.guy-exercise-saved{font-size:12px;color:#287650;font-weight:850;margin-top:7px;min-height:16px}
+@media(max-width:420px){.guy-exercise-log-grid{grid-template-columns:1fr}}
+</style>
+<script id="guy-inline-strength-log">
+(function(){'use strict';
+const KEY='nivFitnessSessionLogsV1', PERF='nivFitnessPerformanceV2', START=new Date(2026,9,11,12);
+const read=()=>{try{return JSON.parse(localStorage.getItem(KEY)||'{}')||{}}catch(e){return {}}};
+const write=x=>localStorage.setItem(KEY,JSON.stringify(x));
+const iso=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+function exerciseName(row){const t=row.querySelector('.ititle,label span')?.textContent||'';return Object.keys(window.exerciseGuides||exerciseGuides||{}).sort((a,b)=>b.length-a.length).find(k=>t.includes(k))||''}
+function rowDate(row){
+ const c=row.querySelector('[data-ff-check]');if(c){const [w,d]=c.dataset.ffCheck.split('-').map(Number);const dt=new Date(START);dt.setDate(dt.getDate()+7*(w-1)+d);return {date:iso(dt),week:w}}
+ const section=row.closest('.day');if(section&&typeof data!=='undefined'){const d=Number(section.id.replace('day',''));const raw=data[d]?.date;if(raw){const [dd,mm,yyyy]=raw.split('.');return {date:`${yyyy}-${mm}-${dd}`,week:1}}}
+ return null;
+}
+function render(row){if(row.querySelector('.guy-exercise-log'))return;const name=exerciseName(row);if(!name)return;const info=rowDate(row);if(!info)return;
+ const log=read()[info.date]||{},v=log.exercises?.[name]||{};
+ const box=document.createElement('div');box.className='guy-exercise-log';
+ box.innerHTML=`<div class="guy-exercise-log-title">📝 סיום ${name} — רשום עכשיו</div><div class="guy-exercise-log-grid"><label>משקל עבודה (ק״ג)<input data-guy-kg type="number" min="0" step="0.5" inputmode="decimal" value="${v.kg??''}"></label><label>חזרות בסט האחרון / שניות<input data-guy-reps type="number" min="0" max="300" inputmode="numeric" value="${v.reps??''}"></label><div class="guy-rpe"><label>קושי התרגיל 1–10</label><div class="guy-rpe-buttons">${Array.from({length:10},(_,i)=>`<button type="button" data-guy-rpe="${i+1}" class="${Number(v.rpe)===i+1?'on':''}">${i+1}</button>`).join('')}</div></div></div><button type="button" class="guy-exercise-save">💾 שמור תרגיל</button><div class="guy-exercise-saved">${v.kg||v.reps||v.rpe?'✓ נתוני התרגיל כבר שמורים':''}</div>`;
+ const anchor=row.querySelector('.idesc')?.parentElement||row;anchor.appendChild(box);
+ let rpe=Number(v.rpe)||0;box.querySelectorAll('[data-guy-rpe]').forEach(b=>b.onclick=()=>{rpe=Number(b.dataset.guyRpe);box.querySelectorAll('[data-guy-rpe]').forEach(x=>x.classList.toggle('on',x===b))});
+ box.querySelector('.guy-exercise-save').onclick=()=>{const all=read(),existing=all[info.date]||{};existing.type='strength';existing.exercises={...(existing.exercises||{})};existing.exercises[name]={kg:box.querySelector('[data-guy-kg]').value,reps:box.querySelector('[data-guy-reps]').value,rpe:String(rpe||'')};existing.updated=new Date().toISOString();all[info.date]=existing;write(all);
+  let perf={};try{perf=JSON.parse(localStorage.getItem(PERF)||'{}')||{}}catch(e){}const old=perf[info.week]||{};old.strength={...(old.strength||{}),[name]:existing.exercises[name]};perf[info.week]=old;localStorage.setItem(PERF,JSON.stringify(perf));
+  box.querySelector('.guy-exercise-saved').textContent='✓ נשמר — אפשר לעבור לתרגיל הבא';if(typeof toast==='function')toast('💪 נתוני התרגיל נשמרו');
+ };
+ const check=row.querySelector('.check,[data-ff-check]');if(check?.checked)box.classList.add('open');
+}
+function decorate(){document.querySelectorAll('.item,.ff-row').forEach(render)}
+document.addEventListener('change',e=>{const c=e.target;if(!c.matches('.check,[data-ff-check]'))return;const row=c.closest('.item,.ff-row');if(!row)return;render(row);const box=row.querySelector('.guy-exercise-log');if(!box)return;box.classList.toggle('open',c.checked);if(c.checked)setTimeout(()=>row.querySelector('[data-guy-kg]')?.focus(),80)},true);
+new MutationObserver(()=>decorate()).observe(document.body,{childList:true,subtree:true});decorate();
+})();
+</script>
+</body></html>
